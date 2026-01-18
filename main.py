@@ -53,13 +53,14 @@ for i in range(1,11):
 # Write a function to check prime number
 
 def isprime(num):
-    if num<=1:
+    if num <= 1:
         return False
-    elif num==2:
+    elif num == 2:
         return True
-
-    for i in range(2,(int(num)*0.5)+1):
-         if num%i==0:
+    
+    # Fixed the range syntax and calculation
+    for i in range(2, int(num**0.5) + 1):
+        if num % i == 0:
             return False
     return True
 
@@ -68,6 +69,7 @@ if isprime(num):
     print(f"{num} is a prime number")
 else:
     print(f"{num} is not a prime number")
+
 
 
 
