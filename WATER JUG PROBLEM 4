@@ -1,0 +1,370 @@
+# Water Jug Problem Solver - Clean Console Version
+from collections import deque
+import time
+import os
+
+
+class WaterJugSolver:
+    """Solves water jug problem using BFS algorithm"""
+
+    def __init__(self):
+        self.solution_path = []
+        self.states_visited = 0
+        self.solve_time = 0
+
+    def bfs(self, x_capacity, y_capacity, target):
+        """Breadth-First Search algorithm"""
+        start_time = time.time()
+
+        start = (0, 0)
+        queue = deque()
+        queue.append((start, [start]))
+        visited = set()
+        visited.add(start)
+
+        while queue:
+            (x, y), path = queue.popleft()
+            self.states_visited += 1
+
+            if x == target or y == target:
+                self.solution_path = path
+                self.solve_time = time.time() - start_time
+                return True
+
+            # Generate next states
+            next_states = []
+            if x < x_capacity: next_states.append((x_capacity, y))
+            if y < y_capacity: next_states.append((x, y_capacity))
+            if x > 0: next_states.append((0, y))
+            if y > 0: next_states.append((x, 0))
+
+            if x > 0 and y < y_capacity:
+                pour = min(x, y_capacity - y)
+                next_states.append((x - pour, y + pour))
+
+            if y > 0 and x < x_capacity:
+                pour = min(y, x_capacity - x)
+                next_states.append((x + pour, y - pour))
+
+            for state in next_states:
+                if state not in visited:
+                    visited.add(state)
+                    queue.append((state, path + [state]))
+
+        self.solve_time = time.time() - start_time
+        return False
+
+
+def clear_screen():
+    """Clear terminal screen"""
+    os.system('clear' if os.name != 'nt' else 'cls')
+
+
+def display_header():
+    """Display minimal header"""
+    print("=" * 60)
+    print("WATER JUG PROBLEM SOLVER")
+    print("BFS Algorithm")
+    print("=" * 60)
+
+
+def draw_vertical_jugs(x_capacity, y_capacity, x_amount, y_amount, step, action):
+    """Draw vertical bar representation of jugs"""
+
+    # Fixed height for visualization
+    VISUAL_HEIGHT = 15
+
+    # Calculate water levels
+    x_filled = int((x_amount / x_capacity) * VISUAL_HEIGHT) if x_capacity > 0 else 0
+    y_filled = int((y_amount / y_capacity) * VISUAL_HEIGHT) if y_capacity > 0 else 0
+
+    print(f"\nSTEP {step}: {action}")
+    print("-" * 40)
+
+    # Print header for jugs
+    print(f"Jug 1 ({x_capacity}L): {x_amount}L     Jug 2 ({y_capacity}L): {y_amount}L")
+    print()
+
+    # Draw jugs side by side
+    for level in range(VISUAL_HEIGHT - 1, -1, -1):
+        # Jug 1
+        if level < x_filled:
+            left_bar = "  |██████████|  "
+        elif level < VISUAL_HEIGHT:
+            left_bar = "  |          |  "
+        else:
+            left_bar = "              "
+
+        # Jug 2
+        if level < y_filled:
+            right_bar = "|██████████|"
+        elif level < VISUAL_HEIGHT:
+            right_bar = "|          |"
+        else:
+            right_bar = "            "
+
+        print(f"{left_bar}  {right_bar}")
+
+    # Draw jug bases
+    print("  └──────────┘    └──────────┘")
+
+    # Water percentage
+    x_percent = (x_amount / x_capacity * 100) if x_capacity > 0 else 0
+    y_percent = (y_amount / y_capacity * 100) if y_capacity > 0 else 0
+    print(f"\nWater: {x_percent:5.1f}%         Water: {y_percent:5.1f}%")
+
+
+def get_action_description(prev_state, current_state, x_cap, y_cap):
+    """Get action description"""
+    if not prev_state:
+        return "Start"
+
+    prev_x, prev_y = prev_state
+    curr_x, curr_y = current_state
+
+    if curr_x == x_cap and prev_x != x_cap:
+        return "Fill Jug 1"
+    elif curr_y == y_cap and prev_y != y_cap:
+        return "Fill Jug 2"
+    elif curr_x == 0 and prev_x != 0:
+        return "Empty Jug 1"
+    elif curr_y == 0 and prev_y != 0:
+        return "Empty Jug 2"
+    elif curr_x < prev_x:
+        return f"Pour {prev_x - curr_x}L: Jug1 → Jug2"
+    elif curr_x > prev_x:
+        return f"Pour {prev_y - curr_y}L: Jug2 → Jug1"
+    else:
+        return "Continue"
+
+
+def get_user_input():
+    """Get input from user with validation"""
+    while True:
+        try:
+            print("\nEnter parameters:")
+            print("-" * 40)
+            x = int(input("Jug 1 capacity: "))
+            y = int(input("Jug 2 capacity: "))
+            target = int(input("Target volume: "))
+
+            if x <= 0 or y <= 0 or target <= 0:
+                print("Error: Values must be positive")
+                continue
+
+            if target > max(x, y):
+                print(f"Error: Target > max jug capacity ({max(x, y)}L)")
+                continue
+
+            return x, y, target
+
+        except ValueError:
+            print("Error: Please enter numbers only")
+
+
+def show_solution_summary(solver, x_capacity, y_capacity, target):
+    """Show solution summary"""
+    solution = solver.solution_path
+
+    print("\n" + "=" * 60)
+    print("SOLUTION FOUND")
+    print("=" * 60)
+    print(f"Steps: {len(solution) - 1}")
+    print(f"States visited: {solver.states_visited}")
+    print(f"Time: {solver.solve_time:.4f}s")
+    print("-" * 60)
+
+    print("\nSolution path:")
+    for i, (x, y) in enumerate(solution):
+        prev_state = solution[i - 1] if i > 0 else None
+        action = get_action_description(prev_state, (x, y), x_capacity, y_capacity)
+        target_mark = " 🎯" if x == target or y == target else ""
+        print(f"Step {i:2d}: ({x:2d}, {y:2d})  {action}{target_mark}")
+
+
+def step_through_solution(solution, x_capacity, y_capacity, target):
+    """Step through solution interactively"""
+    current_step = 0
+    total_steps = len(solution) - 1
+
+    while True:
+        clear_screen()
+        display_header()
+
+        # Get current state and action
+        x, y = solution[current_step]
+
+        if current_step == 0:
+            action = "Start"
+        else:
+            prev_x, prev_y = solution[current_step - 1]
+            action = get_action_description((prev_x, prev_y), (x, y), x_capacity, y_capacity)
+
+        # Draw current state
+        draw_vertical_jugs(x_capacity, y_capacity, x, y, current_step, action)
+
+        # Target indicator
+        if x == target or y == target:
+            print("\n🎯 TARGET REACHED 🎯")
+
+        # Progress
+        print(f"\nProgress: {current_step}/{total_steps}")
+
+        # Navigation
+        print("\nCommands:")
+        print("[P]revious  [N]ext  [A]uto  [R]estart  [Q]uit")
+
+        # Get user choice
+        if current_step == total_steps:
+            choice = input("\nChoice (R/Q): ").upper().strip()
+            if not choice:
+                choice = 'R'
+        else:
+            choice = input("\nChoice [N]: ").upper().strip()
+            if not choice:
+                choice = 'N'
+
+        # Process choice
+        if choice == 'P' and current_step > 0:
+            current_step -= 1
+        elif choice == 'N' and current_step < total_steps:
+            current_step += 1
+        elif choice == 'A':
+            # Auto-play
+            for step in range(current_step, total_steps + 1):
+                clear_screen()
+                display_header()
+                print(f"\nAuto-play: Step {step}/{total_steps}")
+                print("-" * 40)
+
+                x, y = solution[step]
+                if step == 0:
+                    action = "Start"
+                else:
+                    prev_x, prev_y = solution[step - 1]
+                    action = get_action_description((prev_x, prev_y), (x, y), x_capacity, y_capacity)
+
+                draw_vertical_jugs(x_capacity, y_capacity, x, y, step, action)
+
+                if step < total_steps:
+                    time.sleep(1)
+
+            current_step = total_steps
+            input("\nAuto-play complete. Press Enter...")
+        elif choice == 'R':
+            return True  # Restart
+        elif choice == 'Q':
+            return False  # Quit
+        else:
+            if current_step < total_steps:
+                current_step += 1
+
+
+def show_examples():
+    """Show example problems"""
+    examples = [
+        (4, 3, 2, "Classic: 4L & 3L → 2L"),
+        (5, 3, 4, "5L & 3L → 4L"),
+        (7, 5, 6, "7L & 5L → 6L"),
+        (8, 6, 4, "8L & 6L → 4L"),
+    ]
+
+    clear_screen()
+    display_header()
+
+    print("\nEXAMPLE PROBLEMS")
+    print("-" * 40)
+
+    solver = WaterJugSolver()
+
+    for x, y, t, desc in examples:
+        print(f"\n{desc}")
+        if solver.bfs(x, y, t):
+            steps = len(solver.solution_path) - 1
+            print(f"Solution: {steps} steps")
+        else:
+            print("No solution")
+
+    input("\nPress Enter to continue...")
+
+
+def show_info():
+    """Show algorithm info"""
+    clear_screen()
+    display_header()
+
+    print("""
+ALGORITHM INFO
+
+Problem: Two jugs, unlimited water.
+Goal: Measure exactly T liters.
+
+Allowed operations:
+1. Fill a jug completely
+2. Empty a jug completely
+3. Pour between jugs
+
+Algorithm: Breadth-First Search (BFS)
+- Guarantees shortest solution
+- Explores all possible states
+
+Solution exists if:
+1. T ≤ max jug capacity
+2. T is divisible by GCD of jug capacities
+""")
+    input("\nPress Enter to continue...")
+
+
+def main():
+    """Main program"""
+    while True:
+        clear_screen()
+        display_header()
+
+        print("\nMAIN MENU")
+        print("1. Solve problem")
+        print("2. View examples")
+        print("3. Algorithm info")
+        print("4. Exit")
+
+        choice = input("\nSelect option: ").strip()
+
+        if choice == '1':
+            # Get problem parameters
+            x_capacity, y_capacity, target = get_user_input()
+
+            # Solve
+            print("\nSolving...")
+            solver = WaterJugSolver()
+
+            if not solver.bfs(x_capacity, y_capacity, target):
+                print("No solution found.")
+                input("Press Enter to continue...")
+                continue
+
+            # Show summary
+            clear_screen()
+            display_header()
+            show_solution_summary(solver, x_capacity, y_capacity, target)
+
+            # Ask to step through
+            if input("\nStep through solution? (y/n): ").lower() == 'y':
+                should_restart = step_through_solution(solver.solution_path, x_capacity, y_capacity, target)
+                if not should_restart:
+                    break
+
+            input("\nPress Enter to continue...")
+
+        elif choice == '2':
+            show_examples()
+        elif choice == '3':
+            show_info()
+        elif choice == '4':
+            print("\nGoodbye!")
+            break
+        else:
+            print("Invalid choice")
+
+
+if __name__ == "__main__":
+    main()
